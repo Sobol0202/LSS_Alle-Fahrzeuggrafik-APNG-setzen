@@ -1,93 +1,128 @@
 // ==UserScript==
-// @name         LSS_Alle Fahrzeuggrafike APNG setzen
-// @version      1.0
-// @description  Aktiviert die Checkboxen und speichert die Fahrzeuggrafiken auf allen Detailseiten
-// @match        https://www.leitstellenspiel.de/vehicle_graphics/*/edit
-// @grant        none
+// @name         LSS-Fahrzeug AJPG-Selector
+// @namespace    https://www.leitstellenspiel.de
+// @version      1.1
+// @description  Fügt einen neuen Button ein um alle Fahrzeuge einzeln als AJPG zu setzen
 // @author       MissSobol
+// @match        https://www.leitstellenspiel.de/vehicle_graphics
+// @grant        none
 // ==/UserScript==
 
 (function() {
     'use strict';
 
-    // Funktion zum Aktivieren und Speichern der Fahrzeuggrafik auf einer Detailseite
-    function activateAndSaveVehicleGraphic() {
-        // Checkbox-Element für die Fahrzeuggrafik auswählen
-        var checkbox = document.getElementById('vehicle_graphic_image_apng');
-        if (checkbox) {
-            // Checkbox aktivieren
-            checkbox.checked = true;
+    // Button erstellen
+    var button = document.createElement("button");
+    button.innerHTML = "AJPG-Setzen";
+    button.style.margin = "10px";
 
-            // Speicherbutton-Element auswählen
-            var saveButton = document.querySelector('input[type="submit"]');
-            if (saveButton) {
-                // Formular speichern (submit)
-                saveButton.click();
-            }
+    // Variable zum Verfolgen des Skriptstatus
+    var isRunning = false;
+
+    // Funktion, die beim Klick auf den Button ausgeführt wird
+    function buttonClick() {
+        if (isRunning) {
+            console.log("Das Skript läuft bereits.");
+            return;
         }
-    }
 
-    // Funktion zum Öffnen der Detailseiten und Aktivieren/Speichern der Fahrzeuggrafiken
-    function processDetailPages() {
-        // Alle Detailseiten-Links sammeln
-        var detailLinks = document.querySelectorAll('.btn.btn-default[href^="/vehicle_graphics/"][href$="/edit"]');
-        if (detailLinks.length > 0) {
-            // Rekursive Funktion für die Verarbeitung der Detailseiten
-            var processPage = function(index) {
-                // Überprüfen, ob der Index innerhalb des Bereichs der Detailseiten liegt
-                if (index >= detailLinks.length) {
-                    return; // Verarbeitung abbrechen
+        // Setze den Skriptstatus auf "läuft"
+        isRunning = true;
+
+        // API-Aufruf, um die Fahrzeug-IDs abzurufen
+        console.log("API wird aufgerufen...");
+        fetch("https://www.leitstellenspiel.de/api/vehicles")
+            .then(response => response.json())
+            .then(data => {
+                // IDs der Fahrzeuge auslesen
+                var vehicleIDs = data.map(vehicle => vehicle.id);
+                console.log("Fahrzeug-IDs erhalten:", vehicleIDs);
+
+                // Popup-Fenster anzeigen, um die Konfiguration der Fahrzeuge zu ermöglichen
+                var startVehicle = parseInt(prompt("Es wurden " + vehicleIDs.length + " Fahrzeuge gefunden. Bitte gib ein, mit dem wievielten Fahrzeug begonnen werden soll.", "1"), 10);
+                var endVehicle = parseInt(prompt("Bitte gib ein, bei wie vielen Fahrzeugen aufgehört werden soll.", vehicleIDs.length), 10);
+                if (isNaN(startVehicle) || isNaN(endVehicle)) {
+                    console.log("Ungültige Eingabe. Das Skript wird beendet.");
+                    isRunning = false;
+                    return;
                 }
 
-                // Detailseite öffnen
-                var detailLink = detailLinks[index];
-                var detailUrl = detailLink.getAttribute('href');
-                var detailWindow = window.open(detailUrl, '_blank');
-
-                // Funktion zum Aktivieren und Speichern der Fahrzeuggrafik auf der Detailseite
-                var activateAndSave = function() {
-                    if (detailWindow) {
-                        // Funktion im Kontext des Detailfensters ausführen
-                        detailWindow.eval('(' + activateAndSaveVehicleGraphic.toString() + ')()');
-
-                        // Nächste Detailseite nach einer halben Sekunde öffnen
-                        setTimeout(function() {
-                            detailWindow.close(); // Detailseite schließen
-                            processPage(index + 1); // Nächste Detailseite verarbeiten
-                        }, 500);
+                // Funktion, um die Detailseite eines Fahrzeugs zu besuchen und die Checkbox zu aktivieren
+                function visitVehicleDetailPage(index) {
+                    if (!isRunning) {
+                        console.log("Das Skript wurde unterbrochen.");
+                        return;
                     }
-                };
 
-                // Warten, bis das Detailfenster geladen ist, und dann Aktivierung/Speicherung durchführen
-                if (detailWindow) {
-                    detailWindow.addEventListener('load', activateAndSave);
+                    if (index >= vehicleIDs.length || index >= endVehicle) {
+                        // Alle Fahrzeuge wurden bearbeitet oder das Ende erreicht
+                        console.log("Bearbeitung abgeschlossen!");
+                        // Setze den Skriptstatus auf "beendet"
+                        isRunning = false;
+                        return;
+                    }
+
+                    var vehicleID = vehicleIDs[index];
+                    var detailPageURL = "https://www.leitstellenspiel.de/vehicles/" + vehicleID + "/edit";
+                    console.log("Besuche Detailseite für Fahrzeug mit ID", vehicleID);
+
+                    // Neuen Tab öffnen und Detailseite des Fahrzeugs aufrufen
+                    var newTab = window.open(detailPageURL, "_blank");
+
+                    // Funktion zum Schließen des Tabs nach 2 Sekunden
+                    function closeTab() {
+                        setTimeout(function() {
+                            newTab.close();
+                            // Nächste Detailseite besuchen nachdem der Tab geschlossen wurde
+                            visitVehicleDetailPage(index + 1);
+                        }, 2000);
+                    }
+
+                    // Funktion zum Aktivieren der Checkbox und Klicken des "Submit"-Buttons
+                    function setCheckboxAndSubmit() {
+                        // Checkbox mit der ID "vehicle_apng" suchen und auf TRUE setzen, wenn sichtbar
+                        var checkbox = newTab.document.querySelector("#vehicle_apng");
+                        if (checkbox && checkbox.style.display !== "none") {
+                            checkbox.checked = true;
+                            console.log("Checkbox auf TRUE gesetzt.");
+
+                            // Button mit den spezifizierten Klassen, Attributen und Werten suchen und drücken
+                            var submitButton = newTab.document.querySelector(".btn.btn.btn-success[name='commit'][type='submit'][value='Speichern']");
+                            if (submitButton) {
+                                submitButton.click();
+                                console.log("Fahrzeugeinstellungen gespeichert.");
+                            }
+                        }
+
+                        // Tab schließen
+                        closeTab();
+                    }
+
+                    // Warten Sie eine halbe Sekunde, bevor Sie die Checkbox und den Submit-Button setzen
+                    setTimeout(setCheckboxAndSubmit, 500);
                 }
-            };
 
-            // Erste Detailseite verarbeiten
-            processPage(0);
-        }
-    }
-
-    // Funktion zum Klicken des Buttons auf der Hauptseite
-    function clickButton() {
-        // Tabelle auswählen
-        var table = document.querySelector('table.table-striped');
-        if (table) {
-            // Button-Element erstellen
-            var button = document.createElement('button');
-            button.textContent = 'Aktiviere Fahrzeuggrafiken';
-            button.style.marginBottom = '10px';
-            button.addEventListener('click', function() {
-                // Button-Klick auf der Hauptseite
-                processDetailPages(); // Detailseiten verarbeiten
+                // Erste Detailseite besuchen
+                visitVehicleDetailPage(startVehicle - 1);
             });
-
-            // Button über der Tabelle einfügen
-            table.parentNode.insertBefore(button, table);
-        }
     }
 
-    // Button-Klick auf der Hauptseite
-    clickButton();
+    // Klick-Ereignis dem Button hinzufügen
+    button.addEventListener("click", buttonClick);
+
+    // Überprüfung auf Escape-Taste, um das Skript zu unterbrechen
+    document.addEventListener("keyup", function(event) {
+        if (event.key === "Escape") {
+            isRunning = false;
+            console.log("Das Skript wurde unterbrochen.");
+        }
+    });
+
+    // Element mit der ID "bs-example-navbar-collapse-alliance" auswählen
+    var parentElement = document.getElementById("bs-example-navbar-collapse-alliance");
+    if (parentElement) {
+        parentElement.style.display = "flex";
+        parentElement.style.flexDirection = "row-reverse";
+        parentElement.insertBefore(button, parentElement.firstChild);
+    }
 })();
