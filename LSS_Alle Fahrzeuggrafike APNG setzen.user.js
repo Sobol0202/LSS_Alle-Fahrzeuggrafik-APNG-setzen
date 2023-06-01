@@ -98,7 +98,7 @@
                         closeTab();
                     }
 
-                    // Warten Sie eine halbe Sekunde, bevor Sie die Checkbox und den Submit-Button setzen
+                    // Warte eine halbe Sekunde, bevor die Checkbox und den Submit-Button geklickt werden
                     setTimeout(setCheckboxAndSubmit, 500);
                 }
 
