@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         LSS-Fahrzeug AJPG-Selector
 // @namespace    https://www.leitstellenspiel.de
-// @version      1.3r
+// @version      1.4r
 // @description  Fügt einen neuen Button ein um alle Fahrzeuge einzeln als AJPG zu setzen
 // @author       MissSobol
-// @match        https://www.leitstellenspiel.de/vehicle_graphics
+// @match        https://www.leitstellenspiel.de/settings/index*
 // @grant        none
 // ==/UserScript==
 
@@ -14,7 +14,10 @@
     // Button erstellen
     var button = document.createElement("button");
     button.innerHTML = "AJPG-Setzen";
-    button.style.margin = "10px";
+    button.style.position = "fixed";
+    button.style.bottom = "10px";
+    button.style.left = "10px";
+    button.style.zIndex = "9999";
 
     // Variable zum Verfolgen des Skriptstatus
     var isRunning = false;
@@ -118,11 +121,6 @@
         }
     });
 
-    // Element mit der ID "bs-example-navbar-collapse-alliance" auswählen
-    var parentElement = document.getElementById("bs-example-navbar-collapse-alliance");
-    if (parentElement) {
-        parentElement.style.display = "flex";
-        parentElement.style.flexDirection = "row-reverse";
-        parentElement.insertBefore(button, parentElement.firstChild);
-    }
+    // Button zur Seite hinzufügen
+    document.body.appendChild(button);
 })();
