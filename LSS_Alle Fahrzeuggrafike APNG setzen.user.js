@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LSS-Fahrzeug AJPG-Selector
 // @namespace    https://www.leitstellenspiel.de
-// @version      1.4r
+// @version      1.5
 // @description  Fügt einen neuen Button ein um alle Fahrzeuge einzeln als AJPG zu setzen
 // @author       MissSobol
 // @match        https://www.leitstellenspiel.de/settings/index*
@@ -18,6 +18,7 @@
     button.style.bottom = "10px";
     button.style.left = "10px";
     button.style.zIndex = "9999";
+    button.style.color = "black";
 
     // Variable zum Verfolgen des Skriptstatus
     var isRunning = false;
